@@ -616,48 +616,18 @@ require('lazy').setup({
         terraformls = {},
         -- ESLint: lints JS/TS and auto-fixes on save
         eslint = {
+          -- Use the project's eslint config; workingDirectories auto-detects the project root
+          settings = {
+            workingDirectories = { mode = 'auto' },
+          },
           on_attach = function(_, bufnr)
             vim.api.nvim_create_autocmd('BufWritePre', {
               buffer = bufnr,
-              callback = function()
-                pcall(vim.cmd, 'EslintFixAll')
-              end,
+              callback = function() pcall(vim.cmd, 'EslintFixAll') end,
             })
           end,
         },
-        -- ─── TypeScript / JavaScript ─────────────────────────────────────────────
-        ts_ls = {
-          -- ts_ls covers: .ts, .tsx, .js, .jsx, .mjs, .cjs out of the box
-          settings = {
-            typescript = {
-              inlayHints = {
-                includeInlayParameterNameHints = 'all', -- show param names
-                includeInlayParameterNameHintsWhenArgumentMatchesName = false,
-                includeInlayFunctionParameterTypeHints = true,
-                includeInlayVariableTypeHints = true,
-                includeInlayPropertyDeclarationTypeHints = true,
-                includeInlayFunctionLikeReturnTypeHints = true,
-                includeInlayEnumMemberValueHints = true,
-              },
-            },
-            javascript = {
-              inlayHints = {
-                includeInlayParameterNameHints = 'all',
-                includeInlayParameterNameHintsWhenArgumentMatchesName = false,
-                includeInlayFunctionParameterTypeHints = true,
-                includeInlayVariableTypeHints = true,
-                includeInlayPropertyDeclarationTypeHints = true,
-                includeInlayFunctionLikeReturnTypeHints = true,
-                includeInlayEnumMemberValueHints = true,
-              },
-            },
-          },
-        },
-        -- Some languages (like typescript) have entire language plugins that can be useful:
-        --    https://github.com/pmizio/typescript-tools.nvim
-        --
-        -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
+        -- TypeScript / JavaScript is handled by typescript-tools.nvim (see below)
 
         stylua = {}, -- Used to format Lua code
 
@@ -704,7 +674,6 @@ require('lazy').setup({
         'bash-language-server',
         'stylua',
         -- ── TypeScript / JS ──
-        'typescript-language-server', -- ts_ls
         'eslint-lsp', -- eslint
         'prettierd', -- formatter (used via conform.nvim)
         -- ── Terraform ────────
@@ -724,6 +693,28 @@ require('lazy').setup({
         vim.lsp.enable(name)
       end
     end,
+  },
+
+  { -- TypeScript / JavaScript (replaces ts_ls with direct tsserver access)
+    'pmizio/typescript-tools.nvim',
+    dependencies = { 'nvim-lua/plenary.nvim', 'neovim/nvim-lspconfig' },
+    ft = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+    opts = {
+      settings = {
+        tsserver_file_preferences = {
+          includeInlayParameterNameHints = 'all',
+          includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+          includeInlayFunctionParameterTypeHints = true,
+          includeInlayVariableTypeHints = true,
+          includeInlayPropertyDeclarationTypeHints = true,
+          includeInlayFunctionLikeReturnTypeHints = true,
+          includeInlayEnumMemberValueHints = true,
+        },
+      },
+      on_attach = function(_, bufnr)
+        vim.keymap.set('n', 'gs', '<cmd>TSToolsGoToSourceDefinition<CR>', { buffer = bufnr, desc = '[G]oto [S]ource Definition (.js)' })
+      end,
+    },
   },
 
   { -- Autoformat
@@ -1024,6 +1015,17 @@ require('lazy').setup({
     },
   },
 })
+
+-- ── Neovide ──────────────────────────────────────────────────────────────────
+if vim.g.neovide then
+  vim.g.neovide_cursor_animation_length = 0.15
+  vim.g.neovide_cursor_trail_size = 0.8
+  vim.g.neovide_cursor_animate_in_insert_mode = true
+  vim.g.neovide_cursor_animate_command_line = true
+  vim.g.neovide_cursor_smooth_blink = true
+  -- vim.o.guifont = 'Source Code Pro:h17'
+  vim.g.neovide_scale_factor = 1.5
+end
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
