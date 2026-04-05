@@ -311,7 +311,7 @@ require('lazy').setup({
     ---@diagnostic disable-next-line: missing-fields
     opts = {
       -- delay between pressing a key and opening which-key (milliseconds)
-      delay = 0,
+      delay = 1000,
       icons = { mappings = vim.g.have_nerd_font },
 
       -- Document existing key chains
@@ -428,7 +428,7 @@ require('lazy').setup({
           local buf = event.buf
 
           -- Find references for the word under your cursor.
-          vim.keymap.set('n', 'grr', builtin.lsp_references, { buffer = buf, desc = '[G]oto [R]eferences' })
+          vim.keymap.set('n', 'gr', builtin.lsp_references, { buffer = buf, desc = '[G]oto [R]eferences' })
 
           -- Jump to the implementation of the word under your cursor.
           -- Useful when your language has ways of declaring types without an actual implementation.
@@ -619,7 +619,9 @@ require('lazy').setup({
           on_attach = function(_, bufnr)
             vim.api.nvim_create_autocmd('BufWritePre', {
               buffer = bufnr,
-              command = 'EslintFixAll',
+              callback = function()
+                pcall(vim.cmd, 'EslintFixAll')
+              end,
             })
           end,
         },
@@ -756,11 +758,6 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
       },
     },
   },
