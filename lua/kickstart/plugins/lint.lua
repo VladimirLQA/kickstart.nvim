@@ -10,6 +10,7 @@ return {
     lint.linters_by_ft = {
       markdown = { 'markdownlint' }, -- Make sure to install `markdownlint` via mason / npm
       python = { 'ruff' },
+      terraform = { 'tflint' },
     }
 
     -- To allow other plugins to add linters to require('lint').linters_by_ft,
@@ -28,7 +29,6 @@ return {
     --   markdown = { "vale" },
     --   rst = { "vale" },
     --   ruby = { "ruby" },
-    --   terraform = { "tflint" },
     --   text = { "vale" }
     -- }
     --

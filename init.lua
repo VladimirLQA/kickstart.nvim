@@ -237,10 +237,13 @@ vim.keymap.set('v', '<leader>/', 'gc', { desc = 'Toggle comment', remap = true }
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
--- Recognize Jenkinsfile as groovy
+-- Recognize Jenkinsfile as groovy and terraform vars
 vim.filetype.add {
   filename = {
     ['Jenkinsfile'] = 'groovy',
+  },
+  extension = {
+    tfvars = 'terraform-vars',
   },
   pattern = {
     ['Jenkinsfile.*'] = 'groovy',
@@ -905,21 +908,47 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'sainnhe/everforest',
+    'craftzdog/solarized-osaka.nvim',
     lazy = false,
     priority = 1000, -- Make sure to load this before all the other start plugins.
     config = function()
-      vim.g.everforest_background = 'medium'
-      vim.g.everforest_enable_italic = true
-      vim.g.everforest_better_performance = 1
-      vim.cmd.colorscheme 'everforest'
+      require('solarized-osaka').setup {
+        style = '',
+        use_background = true,
 
-      -- Override error colors to be red
-      vim.api.nvim_set_hl(0, 'Error', { fg = '#ff0000' })
-      vim.api.nvim_set_hl(0, 'ErrorMsg', { fg = '#ff0000' })
-      vim.api.nvim_set_hl(0, 'DiagnosticError', { fg = '#ff0000' })
-      vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextError', { fg = '#ff0000' })
+        transparent = false,
+        terminal_colors = false,
+
+        styles = {
+          comments = { italic = false },
+          variables = {},
+          functons = {},
+          -- sidebars = 'dark',
+          -- floats = 'dark',
+        },
+
+        -- sidebars = { 'qf', 'vista_kind', 'terminal', 'packer' },
+        on_colors = function(colors)
+          colors.hint = colors.orange
+          colors.error = '#ff0000'
+        end,
+      }
+      vim.cmd.colorscheme 'solarized-osaka'
     end,
+
+    -- For everforest theme
+    -- config = function()
+    --   vim.g.everforest_background = 'medium'
+    --   vim.g.everforest_enable_italic = true
+    --   vim.g.everforest_better_performance = 1
+    --   vim.cmd.colorscheme 'everforest'
+    --
+    --   -- Override error colors to be red
+    --   vim.api.nvim_set_hl(0, 'Error', { fg = '#ff0000' })
+    --   vim.api.nvim_set_hl(0, 'ErrorMsg', { fg = '#ff0000' })
+    --   vim.api.nvim_set_hl(0, 'DiagnosticError', { fg = '#ff0000' })
+    --   vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextError', { fg = '#ff0000' })
+    -- end,
   },
 
   -- Highlight todo, notes, etc in comments
