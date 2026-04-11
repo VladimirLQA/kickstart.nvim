@@ -34,24 +34,28 @@ return {
   },
 
   config = function()
-    require('neogit').setup {
+    local neogit = require('neogit')
+    neogit.setup {
       -- Use diffview for side-by-side diffs instead of built-in viewer
       integrations = {
         diffview = true,
         telescope = true,
       },
-      -- Override 'x' discard with a confirmation prompt.
-      -- Hint line will show <unmapped> since neogit can't resolve function mappings.
-      mappings = {
-        status = {
-          ['x'] = function()
-            local choice = vim.fn.confirm('Discard changes? This cannot be undone.', '&Yes\n&No', 2)
-            if choice == 1 then
-              require('neogit').action('status', 'Discard', {})()
-            end
-          end,
-        },
-      },
+      -- Discard is mapped via keybinding with confirmation instead
+      mappings = {},
     }
+
+    -- Add keybinding for discard with confirmation in status buffer
+    vim.api.nvim_create_autocmd('FileType', {
+      pattern = 'NeogitStatus',
+      callback = function()
+        vim.keymap.set('n', 'x', function()
+          local choice = vim.fn.confirm('Discard changes? This cannot be undone.', '&Yes\n&No', 2)
+          if choice == 1 then
+            vim.cmd('NeogitResetFile')
+          end
+        end, { buffer = true, noremap = true })
+      end,
+    })
   end,
 }

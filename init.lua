@@ -191,14 +191,15 @@ vim.diagnostic.config {
   underline = { severity = { min = vim.diagnostic.severity.WARN } },
 
   -- Can switch between these as you prefer
-  virtual_text = true, -- Text shows up at the end of the line
-  virtual_lines = false, -- Text shows up underneath the line, with virtual lines
+  virtual_text = false, -- Text shows up at the end of the line
+  virtual_lines = true, -- Text shows up underneath the line, with virtual lines
 
   -- Auto open the float, so you can easily read the errors when jumping with `[d` and `]d`
   jump = { float = true },
 }
 
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '<leader>i', vim.diagnostic.open_float, { desc = 'Show diagnostic [I]nfo' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -529,17 +530,6 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sn', function() builtin.find_files { cwd = vim.fn.stdpath 'config' } end, { desc = '[S]earch [N]eovim files' })
     end,
   },
-  {
-    'sainnhe/sonokai',
-    lazy = false,
-    priority = 1000,
-    config = function()
-      -- Optionally configure and load the colorscheme
-      -- directly inside the plugin declaration.
-      vim.g.sonokai_enable_italic = true
-      vim.cmd.colorscheme 'sonokai'
-    end,
-  },
 
   -- LSP Plugins
   {
@@ -664,7 +654,7 @@ require('lazy').setup({
       local servers = {
         -- clangd = {},
         -- gopls = {},
-        -- pyright = {},
+        pyright = {},
         -- rust_analyzer = {},
         --
         bashls = {},
@@ -732,6 +722,10 @@ require('lazy').setup({
         -- You can add other tools here that you want Mason to install
         'bash-language-server',
         'stylua',
+        -- ── Python ──────────
+        'pyright', -- LSP
+        'ruff', -- linter
+        'black', -- formatter
         -- ── TypeScript / JS ──
         'eslint-lsp', -- eslint
         'prettierd', -- formatter (used via conform.nvim)
@@ -808,6 +802,7 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        python = { 'black' },
       },
     },
   },
@@ -910,14 +905,20 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'sainnhe/sonokai',
+    'sainnhe/everforest',
     lazy = false,
     priority = 1000, -- Make sure to load this before all the other start plugins.
     config = function()
-      vim.g.sonokai_style = 'default' -- 'default', 'atlantis', 'andromeda', 'shusia', 'maia', 'espresso'
-      vim.g.sonokai_enable_italic = true
-      vim.g.sonokai_better_performance = 1
-      vim.cmd.colorscheme 'sonokai'
+      vim.g.everforest_background = 'medium'
+      vim.g.everforest_enable_italic = true
+      vim.g.everforest_better_performance = 1
+      vim.cmd.colorscheme 'everforest'
+
+      -- Override error colors to be red
+      vim.api.nvim_set_hl(0, 'Error', { fg = '#ff0000' })
+      vim.api.nvim_set_hl(0, 'ErrorMsg', { fg = '#ff0000' })
+      vim.api.nvim_set_hl(0, 'DiagnosticError', { fg = '#ff0000' })
+      vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextError', { fg = '#ff0000' })
     end,
   },
 
