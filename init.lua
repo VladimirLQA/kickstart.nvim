@@ -283,6 +283,14 @@ rtp:prepend(lazypath)
 --    :Lazy update
 --
 -- NOTE: Here is where you install your plugins.
+-- Returns true when the ESLint LSP client is attached to the given buffer.
+local function has_eslint(bufnr)
+  for _, client in ipairs(vim.lsp.get_clients { bufnr = bufnr }) do
+    if client.name == 'eslint' then return true end
+  end
+  return false
+end
+
 require('lazy').setup({
   -- NOTE: Plugins can be added via a link or github org/name. To run setup automatically, use `opts = {}`
   { 'NMAC427/guess-indent.nvim', opts = {} },
@@ -650,6 +658,38 @@ require('lazy').setup({
         end,
       })
 
+      -- Run eslint fix-all on save when eslint is attached to the buffer
+      vim.api.nvim_create_autocmd('LspAttach', {
+        group = vim.api.nvim_create_augroup('eslint-fix-on-save', { clear = true }),
+        callback = function(event)
+          local client = vim.lsp.get_client_by_id(event.data.client_id)
+          if client and client.name == 'eslint' then
+            vim.api.nvim_create_autocmd('BufWritePre', {
+              buffer = event.buf,
+              callback = function()
+                local bufnr = vim.api.nvim_get_current_buf()
+                local eslint_client = vim.lsp.get_clients({ bufnr = bufnr, name = 'eslint' })[1]
+                if not eslint_client then return end
+
+                local result = eslint_client:request_sync('textDocument/codeAction', {
+                  textDocument = vim.lsp.util.make_text_document_params(bufnr),
+                  range = {
+                    start = { line = 0, character = 0 },
+                    ['end'] = { line = vim.api.nvim_buf_line_count(bufnr), character = 0 },
+                  },
+                  context = { only = { 'source.fixAll.eslint' }, diagnostics = {} },
+                }, 3000, bufnr)
+
+                if result and result.result and result.result[1] then
+                  local action = result.result[1]
+                  if action.edit then vim.lsp.util.apply_workspace_edit(action.edit, eslint_client.offset_encoding or 'utf-16') end
+                end
+              end,
+            })
+          end
+        end,
+      })
+
       -- Enable the following language servers
       --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
       --  See `:help lsp-config` for information about keys and how to configure
@@ -668,16 +708,9 @@ require('lazy').setup({
         terraformls = {},
         -- ESLint: lints JS/TS and auto-fixes on save
         eslint = {
-          -- Use the project's eslint config; workingDirectories auto-detects the project root
           settings = {
             workingDirectories = { mode = 'auto' },
           },
-          on_attach = function(_, bufnr)
-            vim.api.nvim_create_autocmd('BufWritePre', {
-              buffer = bufnr,
-              callback = function() pcall(vim.cmd, 'EslintFixAll') end,
-            })
-          end,
         },
         -- TypeScript / JavaScript is handled by typescript-tools.nvim (see below)
 
@@ -790,11 +823,16 @@ require('lazy').setup({
     opts = {
       notify_on_error = false,
       format_on_save = function(bufnr)
-        -- Disable "format_on_save lsp_fallback" for languages that don't
-        -- have a well standardized coding style. You can add additional
-        -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
-        if disable_filetypes[vim.bo[bufnr].filetype] then
+        local disable_filetypes = { c = true, cpp = true, markdown = true }
+        local filetype = vim.bo[bufnr].filetype
+
+        -- JS/TS formatting is handled exclusively by EslintFixAll (see autocmd below).
+        -- Do NOT use lsp_format fallback for these — tsserver strips trailing blank lines
+        -- unconditionally, ignoring project config.
+        local js_ts_filetypes = { javascript = true, javascriptreact = true, typescript = true, typescriptreact = true }
+        if js_ts_filetypes[filetype] then return nil end
+
+        if disable_filetypes[filetype] then
           return nil
         else
           return {
@@ -806,6 +844,11 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         python = { 'black' },
+        json = { 'prettierd' },
+        yaml = { 'prettierd' },
+        html = { 'prettierd' },
+        css = { 'prettierd' },
+        markdown = { 'prettierd' },
       },
     },
   },
@@ -908,47 +951,10 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'craftzdog/solarized-osaka.nvim',
+    'catppuccin/nvim',
     lazy = false,
     priority = 1000, -- Make sure to load this before all the other start plugins.
-    config = function()
-      require('solarized-osaka').setup {
-        style = '',
-        use_background = true,
-
-        transparent = false,
-        terminal_colors = false,
-
-        styles = {
-          comments = { italic = false },
-          variables = {},
-          functons = {},
-          -- sidebars = 'dark',
-          -- floats = 'dark',
-        },
-
-        -- sidebars = { 'qf', 'vista_kind', 'terminal', 'packer' },
-        on_colors = function(colors)
-          colors.hint = colors.orange
-          colors.error = '#ff0000'
-        end,
-      }
-      vim.cmd.colorscheme 'solarized-osaka'
-    end,
-
-    -- For everforest theme
-    -- config = function()
-    --   vim.g.everforest_background = 'medium'
-    --   vim.g.everforest_enable_italic = true
-    --   vim.g.everforest_better_performance = 1
-    --   vim.cmd.colorscheme 'everforest'
-    --
-    --   -- Override error colors to be red
-    --   vim.api.nvim_set_hl(0, 'Error', { fg = '#ff0000' })
-    --   vim.api.nvim_set_hl(0, 'ErrorMsg', { fg = '#ff0000' })
-    --   vim.api.nvim_set_hl(0, 'DiagnosticError', { fg = '#ff0000' })
-    --   vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextError', { fg = '#ff0000' })
-    -- end,
+    config = function() require('custom.theme').setup() end,
   },
 
   -- Highlight todo, notes, etc in comments
